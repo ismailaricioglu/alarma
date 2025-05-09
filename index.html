@@ -1,29 +1,112 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Online Alarm Kur</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Alarm</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin: 0.5rem;
+    }
+    #countdown {
+      font-size: 1.25rem;
+      color: green;
+      margin-top: 1rem;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1>Online Alarm Kur</h1>
-
-    <label for="alarm-time">Alarm Saati:</label>
-    <input type="time" id="alarm-time" />
-
-    <label for="alarm-label">Alarm Başlığı:</label>
-    <input type="text" id="alarm-label" placeholder="İsteğe bağlı..." />
-
-    <button id="set-alarm">Alarmı Kur</button>
-    <button id="clear-alarm">Alarmı İptal Et</button>
-
-    <div id="alarm-status"></div>
+    <h1>Online Alarm</h1>
+    <label for="alarmTime">Alarm Saati:</label>
+    <input type="time" id="alarmTime">
+    <br>
+    <label for="alarmLabel">Başlık (isteğe bağlı):</label>
+    <input type="text" id="alarmLabel" placeholder="Bir not yazın...">
+    <br>
+    <button onclick="setAlarm()">Alarmı Kur</button>
+    <button onclick="clearAlarm()">Alarmı İptal Et</button>
+    <div id="status"></div>
+    <div id="countdown"></div>
   </div>
 
-  <audio id="alarm-audio" src="assets/alarm.mp3" preload="auto"></audio>
+  <audio id="alarmSound" src="https://github.com/itswadesh/online-alarm-clock/blob/main/public/sounds/bell.mp3?raw=true" preload="auto"></audio>
 
-  <script src="script.js"></script>
+  <script>
+    let alarmTimeout;
+    let countdownInterval;
+
+    function setAlarm() {
+      const time = document.getElementById("alarmTime").value;
+      const label = document.getElementById("alarmLabel").value || "Alarm!";
+
+      if (!time) {
+        alert("Lütfen bir saat seçin.");
+        return;
+      }
+
+      const [hour, minute] = time.split(":").map(Number);
+      const now = new Date();
+      const alarmTime = new Date();
+      alarmTime.setHours(hour);
+      alarmTime.setMinutes(minute);
+      alarmTime.setSeconds(0);
+
+      if (alarmTime <= now) alarmTime.setDate(alarmTime.getDate() + 1);
+      const timeToAlarm = alarmTime - now;
+
+      clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        const diff = alarmTime - new Date();
+        if (diff <= 0) {
+          clearInterval(countdownInterval);
+          return;
+        }
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        document.getElementById("countdown").textContent =
+          `Kalan: ${hours} sa ${minutes} dk ${seconds} sn`;
+      }, 1000);
+
+      alarmTimeout = setTimeout(() => {
+        document.getElementById("alarmSound").play();
+        alert(label);
+        document.getElementById("status").textContent = "Alarm çaldı: " + label;
+      }, timeToAlarm);
+
+      document.getElementById("status").textContent =
+        `Alarm kuruldu: ${alarmTime.toLocaleTimeString()}`;
+    }
+
+    function clearAlarm() {
+      clearTimeout(alarmTimeout);
+      clearInterval(countdownInterval);
+      document.getElementById("status").textContent = "Alarm iptal edildi.";
+      document.getElementById("countdown").textContent = "";
+      const sound = document.getElementById("alarmSound");
+      sound.pause();
+      sound.currentTime = 0;
+    }
+  </script>
 </body>
 </html>
