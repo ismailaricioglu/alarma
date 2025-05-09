@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Online Alarm</title>
+  <title>Online Alarm ve Kronometre</title>
   <style>
     body {
       font-family: sans-serif;
@@ -11,26 +11,33 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+      justify-content: flex-start;
+      padding: 2rem 1rem;
+      min-height: 100vh;
       margin: 0;
     }
     .container {
       background-color: white;
       padding: 2rem;
+      margin: 1rem;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       text-align: center;
+      width: 100%;
+      max-width: 400px;
     }
     input, button {
       padding: 0.5rem;
       font-size: 1rem;
       margin: 0.5rem;
     }
-    #countdown {
+    #countdown, #stopwatchDisplay {
       font-size: 1.25rem;
       color: green;
       margin-top: 1rem;
+    }
+    .button-group button {
+      margin: 0.25rem;
     }
   </style>
 </head>
@@ -47,6 +54,16 @@
     <button onclick="clearAlarm()">Alarmı İptal Et</button>
     <div id="status"></div>
     <div id="countdown"></div>
+  </div>
+
+  <div class="container">
+    <h1>Kronometre</h1>
+    <div id="stopwatchDisplay">00:00:00</div>
+    <div class="button-group">
+      <button onclick="startStopwatch()">Başlat</button>
+      <button onclick="stopStopwatch()">Durdur</button>
+      <button onclick="resetStopwatch()">Sıfırla</button>
+    </div>
   </div>
 
   <audio id="alarmSound" src="https://github.com/itswadesh/online-alarm-clock/blob/main/public/sounds/bell.mp3?raw=true" preload="auto"></audio>
@@ -106,6 +123,39 @@
       const sound = document.getElementById("alarmSound");
       sound.pause();
       sound.currentTime = 0;
+    }
+
+    // Kronometre
+    let stopwatchInterval;
+    let stopwatchTime = 0;
+    let running = false;
+
+    function updateStopwatchDisplay() {
+      const hours = Math.floor(stopwatchTime / 3600);
+      const minutes = Math.floor((stopwatchTime % 3600) / 60);
+      const seconds = stopwatchTime % 60;
+      document.getElementById("stopwatchDisplay").textContent =
+        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function startStopwatch() {
+      if (running) return;
+      running = true;
+      stopwatchInterval = setInterval(() => {
+        stopwatchTime++;
+        updateStopwatchDisplay();
+      }, 1000);
+    }
+
+    function stopStopwatch() {
+      running = false;
+      clearInterval(stopwatchInterval);
+    }
+
+    function resetStopwatch() {
+      stopStopwatch();
+      stopwatchTime = 0;
+      updateStopwatchDisplay();
     }
   </script>
 </body>
