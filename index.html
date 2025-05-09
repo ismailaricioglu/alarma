@@ -6,145 +6,143 @@
   <title>Online Zamanlayıcı</title>
   <style>
     body {
-      background: #0e0e14;
+      background-color: #0d0d12;
       color: #fff;
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
       text-align: center;
       padding: 20px;
     }
-    .timer-circle {
-      border: 10px solid #00bfff;
-      border-radius: 50%;
-      width: 300px;
-      height: 300px;
-      margin: 20px auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      font-size: 2rem;
-    }
-    .controls button {
-      padding: 10px 20px;
-      margin: 10px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    .start { background: #00bfff; color: #000; }
-    .stop { background: #ff4d4d; color: #000; }
-    .reset { background: #ff9ff3; color: #000; }
-    .continue { background: #1dd1a1; color: #000; }
-    .history {
-      margin-top: 40px;
-      background: #1e1e2e;
-      padding: 20px;
-      border-radius: 10px;
-    }
-    .history table {
-      width: 100%;
-      border-collapse: collapse;
-      color: #fff;
-    }
-    .history th, .history td {
-      border: 1px solid #444;
+    select, input, button {
       padding: 10px;
+      margin: 10px;
+      font-size: 16px;
+    }
+    .quick-buttons button {
+      margin: 5px;
+    }
+    .hidden {
+      display: none;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 80%;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #555;
+    }
+    th {
+      background-color: #222;
+    }
+    .start-button {
+      background-color: #00bfff;
+      color: #000;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <h1>Online Zamanlayıcı</h1>
-  <div class="timer-circle">
-    <div id="timer-title">Zamanlayıcı</div>
-    <div id="countdown">00:00:00</div>
-  </div>
-  <div class="controls">
-    <button class="start" onclick="startTimer()">Zamanlayıcı Başlat</button>
-    <button class="stop" onclick="stopTimer()">Durdur</button>
-    <button class="reset" onclick="resetTimer()">Yeniden Başlat</button>
-    <button class="continue" onclick="continueTimer()">Devam Et</button>
+  
+  <div>
+    <h2>Zamanlayıcı ayarla</h2>
+    <label>Saat:
+      <select id="hours">
+        ${Array.from({length: 24}, (_, i) => `<option value="${i}">${String(i).padStart(2, '0')}</option>`).join('')}
+      </select>
+    </label>
+    <label>Dakika:
+      <select id="minutes">
+        ${Array.from({length: 60}, (_, i) => `<option value="${i}">${String(i).padStart(2, '0')}</option>`).join('')}
+      </select>
+    </label>
+    <label>Saniye:
+      <select id="seconds">
+        ${Array.from({length: 60}, (_, i) => `<option value="${i}">${String(i).padStart(2, '0')}</option>`).join('')}
+      </select>
+    </label>
   </div>
 
-  <div class="history">
-    <h2>Zamanlayıcı Geçmişi</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Başlık</th>
-          <th>Zamanlayıcı</th>
-          <th>Başlangıç</th>
-          <th>Bitiş</th>
-        </tr>
-      </thead>
-      <tbody id="history-body"></tbody>
-    </table>
+  <div class="quick-buttons">
+    ${[15, 20, 30, 45].map(s => `<button onclick="setQuickTime(0, 0, ${s})">${s} saniye</button>`).join('')}
+    ${[1, 5, 10, 15, 20, 25, 30, 45].map(m => `<button onclick="setQuickTime(0, ${m}, 0)">${m} dakika</button>`).join('')}
   </div>
+
+  <div>
+    <label>Alarm sesi:
+      <select id="alarmSound">
+        <option>Uzaylılar</option>
+        <option>Klasik</option>
+        <option>Zil</option>
+      </select>
+    </label>
+  </div>
+
+  <div>
+    <label>Zamanlayıcı başlığı:
+      <input type="text" id="titleInput" value="Zamanlayıcı" />
+    </label>
+  </div>
+
+  <button class="start-button" onclick="startTimer()">Zamanlayıcı Başlat</button>
+
+  <div id="timerDisplay" style="font-size: 48px; margin-top: 20px;">00:00:00</div>
+
+  <h2>Zamanlayıcı Geçmişi</h2>
+  <table id="historyTable">
+    <thead>
+      <tr><th>#</th><th>Başlık</th><th>Zamanlayıcı</th><th>Başlangıç</th><th>Bitiş</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
-    let timerDuration = 20 * 60; // 20 dakika default
-    let remaining = timerDuration;
-    let interval = null;
-    let startedAt = null;
+    let interval;
+    let historyCounter = 1;
 
-    function format(sec) {
-      const h = String(Math.floor(sec / 3600)).padStart(2, '0');
-      const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
-      const s = String(sec % 60).padStart(2, '0');
-      return `${h}:${m}:${s}`;
-    }
-
-    function updateDisplay() {
-      document.getElementById('countdown').textContent = format(remaining);
+    function setQuickTime(h, m, s) {
+      document.getElementById('hours').value = h;
+      document.getElementById('minutes').value = m;
+      document.getElementById('seconds').value = s;
     }
 
     function startTimer() {
-      if (interval) return;
-      startedAt = new Date();
-      interval = setInterval(() => {
-        remaining--;
-        updateDisplay();
-        if (remaining <= 0) {
-          clearInterval(interval);
-          interval = null;
-          alert("⏰ Süre doldu!");
-          logHistory();
-        }
-      }, 1000);
-      updateDisplay();
-    }
-
-    function stopTimer() {
       clearInterval(interval);
-      interval = null;
-    }
 
-    function resetTimer() {
-      stopTimer();
-      remaining = timerDuration;
-      updateDisplay();
-    }
+      const h = parseInt(document.getElementById('hours').value);
+      const m = parseInt(document.getElementById('minutes').value);
+      const s = parseInt(document.getElementById('seconds').value);
+      const totalSeconds = h * 3600 + m * 60 + s;
+      const title = document.getElementById('titleInput').value;
 
-    function continueTimer() {
-      if (!interval) startTimer();
-    }
+      if (totalSeconds === 0) return alert("Lütfen süreyi ayarlayın!");
 
-    function logHistory() {
-      const end = new Date();
-      const tbody = document.getElementById("history-body");
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${tbody.children.length + 1}</td>
-        <td>Zamanlayıcı</td>
-        <td>${format(timerDuration)}</td>
-        <td>${startedAt.toLocaleString()}</td>
-        <td>${end.toLocaleString()}</td>
-      `;
-      tbody.appendChild(row);
-    }
+      const start = new Date();
+      const end = new Date(start.getTime() + totalSeconds * 1000);
+      let secondsLeft = totalSeconds;
 
-    updateDisplay();
+      interval = setInterval(() => {
+        if (secondsLeft <= 0) {
+          clearInterval(interval);
+          document.getElementById('timerDisplay').textContent = '00:00:00';
+          alert('Zaman doldu!');
+          return;
+        }
+        secondsLeft--;
+        const hrs = String(Math.floor(secondsLeft / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((secondsLeft % 3600) / 60)).padStart(2, '0');
+        const secs = String(secondsLeft % 60).padStart(2, '0');
+        document.getElementById('timerDisplay').textContent = `${hrs}:${mins}:${secs}`;
+      }, 1000);
+
+      const tbody = document.querySelector('#historyTable tbody');
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${historyCounter++}</td><td>${title}</td><td>${
+        String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}
+      }</td><td>${start.toLocaleString()}</td><td>${end.toLocaleString()}</td>`;
+      tbody.prepend(row);
+    }
   </script>
 </body>
 </html>
