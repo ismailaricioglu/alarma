@@ -1,162 +1,150 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Online Alarm ve Kronometre</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Zamanlayıcı</title>
   <style>
     body {
+      background: #0e0e14;
+      color: #fff;
       font-family: sans-serif;
-      background-color: #f0f0f0;
+      text-align: center;
+      padding: 20px;
+    }
+    .timer-circle {
+      border: 10px solid #00bfff;
+      border-radius: 50%;
+      width: 300px;
+      height: 300px;
+      margin: 20px auto;
       display: flex;
       flex-direction: column;
+      justify-content: center;
       align-items: center;
-      justify-content: flex-start;
-      padding: 2rem 1rem;
-      min-height: 100vh;
-      margin: 0;
+      font-size: 2rem;
     }
-    .container {
-      background-color: white;
-      padding: 2rem;
-      margin: 1rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      text-align: center;
-      width: 100%;
-      max-width: 400px;
-    }
-    input, button {
-      padding: 0.5rem;
+    .controls button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
       font-size: 1rem;
-      margin: 0.5rem;
+      cursor: pointer;
     }
-    #countdown, #stopwatchDisplay {
-      font-size: 1.25rem;
-      color: green;
-      margin-top: 1rem;
+    .start { background: #00bfff; color: #000; }
+    .stop { background: #ff4d4d; color: #000; }
+    .reset { background: #ff9ff3; color: #000; }
+    .continue { background: #1dd1a1; color: #000; }
+    .history {
+      margin-top: 40px;
+      background: #1e1e2e;
+      padding: 20px;
+      border-radius: 10px;
     }
-    .button-group button {
-      margin: 0.25rem;
+    .history table {
+      width: 100%;
+      border-collapse: collapse;
+      color: #fff;
+    }
+    .history th, .history td {
+      border: 1px solid #444;
+      padding: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Online Alarm</h1>
-    <label for="alarmTime">Alarm Saati:</label>
-    <input type="time" id="alarmTime">
-    <br>
-    <label for="alarmLabel">Başlık (isteğe bağlı):</label>
-    <input type="text" id="alarmLabel" placeholder="Bir not yazın...">
-    <br>
-    <button onclick="setAlarm()">Alarmı Kur</button>
-    <button onclick="clearAlarm()">Alarmı İptal Et</button>
-    <div id="status"></div>
-    <div id="countdown"></div>
+  <h1>Online Zamanlayıcı</h1>
+  <div class="timer-circle">
+    <div id="timer-title">Zamanlayıcı</div>
+    <div id="countdown">00:00:00</div>
+  </div>
+  <div class="controls">
+    <button class="start" onclick="startTimer()">Zamanlayıcı Başlat</button>
+    <button class="stop" onclick="stopTimer()">Durdur</button>
+    <button class="reset" onclick="resetTimer()">Yeniden Başlat</button>
+    <button class="continue" onclick="continueTimer()">Devam Et</button>
   </div>
 
-  <div class="container">
-    <h1>Kronometre</h1>
-    <div id="stopwatchDisplay">00:00:00</div>
-    <div class="button-group">
-      <button onclick="startStopwatch()">Başlat</button>
-      <button onclick="stopStopwatch()">Durdur</button>
-      <button onclick="resetStopwatch()">Sıfırla</button>
-    </div>
+  <div class="history">
+    <h2>Zamanlayıcı Geçmişi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Başlık</th>
+          <th>Zamanlayıcı</th>
+          <th>Başlangıç</th>
+          <th>Bitiş</th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
   </div>
-
-  <audio id="alarmSound" src="https://github.com/itswadesh/online-alarm-clock/blob/main/public/sounds/bell.mp3?raw=true" preload="auto"></audio>
 
   <script>
-    let alarmTimeout;
-    let countdownInterval;
+    let timerDuration = 20 * 60; // 20 dakika default
+    let remaining = timerDuration;
+    let interval = null;
+    let startedAt = null;
 
-    function setAlarm() {
-      const time = document.getElementById("alarmTime").value;
-      const label = document.getElementById("alarmLabel").value || "Alarm!";
+    function format(sec) {
+      const h = String(Math.floor(sec / 3600)).padStart(2, '0');
+      const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
 
-      if (!time) {
-        alert("Lütfen bir saat seçin.");
-        return;
-      }
+    function updateDisplay() {
+      document.getElementById('countdown').textContent = format(remaining);
+    }
 
-      const [hour, minute] = time.split(":").map(Number);
-      const now = new Date();
-      const alarmTime = new Date();
-      alarmTime.setHours(hour);
-      alarmTime.setMinutes(minute);
-      alarmTime.setSeconds(0);
-
-      if (alarmTime <= now) alarmTime.setDate(alarmTime.getDate() + 1);
-      const timeToAlarm = alarmTime - now;
-
-      clearInterval(countdownInterval);
-      countdownInterval = setInterval(() => {
-        const diff = alarmTime - new Date();
-        if (diff <= 0) {
-          clearInterval(countdownInterval);
-          return;
+    function startTimer() {
+      if (interval) return;
+      startedAt = new Date();
+      interval = setInterval(() => {
+        remaining--;
+        updateDisplay();
+        if (remaining <= 0) {
+          clearInterval(interval);
+          interval = null;
+          alert("⏰ Süre doldu!");
+          logHistory();
         }
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
-        document.getElementById("countdown").textContent =
-          `Kalan: ${hours} sa ${minutes} dk ${seconds} sn`;
       }, 1000);
-
-      alarmTimeout = setTimeout(() => {
-        document.getElementById("alarmSound").play();
-        alert(label);
-        document.getElementById("status").textContent = "Alarm çaldı: " + label;
-      }, timeToAlarm);
-
-      document.getElementById("status").textContent =
-        `Alarm kuruldu: ${alarmTime.toLocaleTimeString()}`;
+      updateDisplay();
     }
 
-    function clearAlarm() {
-      clearTimeout(alarmTimeout);
-      clearInterval(countdownInterval);
-      document.getElementById("status").textContent = "Alarm iptal edildi.";
-      document.getElementById("countdown").textContent = "";
-      const sound = document.getElementById("alarmSound");
-      sound.pause();
-      sound.currentTime = 0;
+    function stopTimer() {
+      clearInterval(interval);
+      interval = null;
     }
 
-    // Kronometre
-    let stopwatchInterval;
-    let stopwatchTime = 0;
-    let running = false;
-
-    function updateStopwatchDisplay() {
-      const hours = Math.floor(stopwatchTime / 3600);
-      const minutes = Math.floor((stopwatchTime % 3600) / 60);
-      const seconds = stopwatchTime % 60;
-      document.getElementById("stopwatchDisplay").textContent =
-        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    function resetTimer() {
+      stopTimer();
+      remaining = timerDuration;
+      updateDisplay();
     }
 
-    function startStopwatch() {
-      if (running) return;
-      running = true;
-      stopwatchInterval = setInterval(() => {
-        stopwatchTime++;
-        updateStopwatchDisplay();
-      }, 1000);
+    function continueTimer() {
+      if (!interval) startTimer();
     }
 
-    function stopStopwatch() {
-      running = false;
-      clearInterval(stopwatchInterval);
+    function logHistory() {
+      const end = new Date();
+      const tbody = document.getElementById("history-body");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${tbody.children.length + 1}</td>
+        <td>Zamanlayıcı</td>
+        <td>${format(timerDuration)}</td>
+        <td>${startedAt.toLocaleString()}</td>
+        <td>${end.toLocaleString()}</td>
+      `;
+      tbody.appendChild(row);
     }
 
-    function resetStopwatch() {
-      stopStopwatch();
-      stopwatchTime = 0;
-      updateStopwatchDisplay();
-    }
+    updateDisplay();
   </script>
 </body>
 </html>
