@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Alarm Kur</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Online Alarm Kur</h1>
+
+    <label for="alarm-time">Alarm Saati:</label>
+    <input type="time" id="alarm-time" />
+
+    <label for="alarm-label">Alarm Başlığı:</label>
+    <input type="text" id="alarm-label" placeholder="İsteğe bağlı..." />
+
+    <button id="set-alarm">Alarmı Kur</button>
+    <button id="clear-alarm">Alarmı İptal Et</button>
+
+    <div id="alarm-status"></div>
+  </div>
+
+  <audio id="alarm-audio" src="assets/alarm.mp3" preload="auto"></audio>
+
+  <script src="script.js"></script>
+</body>
+</html>
